@@ -188,7 +188,6 @@ def main(args):
         for i in trange(args.n_data):
             # sample class vector and set up the save path
             ys = sample_classes(args.mode, args.classes)
-            # ys = [c,c,c]
             im_name = f'{args.run_name}_{i:07}'
 
             if args.interp:
@@ -232,7 +231,7 @@ if __name__ == '__main__':
                         choices=['', 'all', 'shape', 'text', 'bg'],
                         help='Save interpolation sheet instead of single ims.')
     parser.add_argument('--interp_cls', type=int, default=-1,
-                        help='Classes to which we interpolate. val=-1 samples_colored a random class.')
+                        help='Classes to which we interpolate. val=-1 samples a random class.')
     parser.add_argument('--midpoints', type=int, default=6,
                         help='How many midpoints for the interpolation')
     parser.add_argument('--save_noise', default=False, action='store_true',

@@ -39,8 +39,8 @@ def fit(cfg, cgn, discriminator, dataloader, opts, losses, device):
     time_str = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     model_path = Path('.') / 'mnists' / 'experiments'
     model_path /= f'cgn_{cfg.TRAIN.DATASET}_{time_str}_{cfg.MODEL_NAME}'
-    weights_path = model_path / 'weBights'
-    sample_path = model_path / 'samples_colored'
+    weights_path = model_path / 'weights'
+    sample_path = model_path / 'samples'
     weights_path.mkdir(parents=True, exist_ok=True)
     sample_path.mkdir(parents=True, exist_ok=True)
 
@@ -107,7 +107,7 @@ def fit(cfg, cgn, discriminator, dataloader, opts, losses, device):
             # Saving
             batches_done = epoch * len(dataloader) + i
             if batches_done % cfg.LOG.SAVE_ITER == 0:
-                print("Saving samples_colored and weights")
+                print("Saving samples and weights")
                 sample_image(cgn, sample_path, batches_done, device, n_row=3)
                 torch.save(cgn.state_dict(), f"{weights_path}/ckp_{batches_done:d}.pth")
 
@@ -161,24 +161,19 @@ if __name__ == "__main__":
     parser.add_argument('--cfg', type=str, default='',
                         help="path to a cfg file")
     parser.add_argument('--model_name', default='tmp',
-                        help='Weights and samples_colored will be saved under experiments/model_name')
+                        help='Weights and samples will be saved under experiments/model_name')
     parser.add_argument("--save_iter", type=int, default=1000,
                         help="interval between image sampling")
     parser.add_argument("--epochs", type=int, default=15,
                         help="number of epochs of training")
     parser.add_argument("--batch_size", type=int, default=16,
                         help="size of the batches")
-    parser.add_argument("--idx", type=int, default=-1)
-    parser.add_argument("--val", type=float, default=-1)
     args = parser.parse_args()
 
     # get cfg
     cfg = load_cfg(args.cfg) if args.cfg else get_cfg_defaults()
     # add additional arguments in the argparser and in the function below
     cfg = merge_args_and_cfg(args, cfg)
-    if args.idx > -1:
-        cfg.LAMBDAS.PERC[args.idx] = args.val
-        print(args.val)
 
     print(cfg)
     main(cfg)

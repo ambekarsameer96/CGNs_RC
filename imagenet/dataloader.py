@@ -60,7 +60,7 @@ class DistributedSampler(Sampler):
 
 
         if not self.drop_last:
-            # add extra samples_colored to make it evenly divisible
+            # add extra samples to make it evenly divisible
             indices += indices[:(self.total_size - len(indices))]
         else:
             # remove tail of data to make it evenly divisible.
@@ -101,14 +101,15 @@ class ImagenetVanilla(Dataset) :
 
         # Transforms
         if train:
-            ims_path = join(root, 'Imagenet', 'Data', 'CLS-LOC', 'train')
+            ims_path = join(root, 'imagenet', 'train')
             t_list = [transforms.RandomResizedCrop(224), transforms.RandomHorizontalFlip()]
         else:
-            ims_path = join(root, 'Imagenet', 'Data', 'CLS-LOC', 'val')
+            ims_path = join(root, 'imagenet', 'val')
             t_list = [transforms.Resize(256), transforms.CenterCrop(224)]
 
         t_list += [transforms.ToTensor(), normalize]
         self.T_ims = transforms.Compose(t_list)
+
         self.im_paths, self.labels = self.get_data(ims_path)
 
     def set_len(self, n):
@@ -120,13 +121,11 @@ class ImagenetVanilla(Dataset) :
     def get_data(p):
         ims, labels = [], []
         subdirs = sorted(glob(p + '/*'))
-        print('HERE IS PATH', p)
         for i, sub in enumerate(subdirs):
             im = sorted(glob(sub + '/*'))
             l = np.ones(len(im))*i
             ims.append(im), labels.append(l)
-        print(len(np.concatenate(ims)))
-        return np.concatenate(ims)[0:1000], np.concatenate(labels)[0:1000]
+        return np.concatenate(ims), np.concatenate(labels)
 
     def __getitem__(self, idx):
         ims = Image.open(self.im_paths[idx]).convert('RGB')
@@ -151,7 +150,7 @@ class ImagenetCounterfactual(Dataset):
           "RUN_NAME_0000000_textures.jpg"
     '''
 
-    def __init__(self, ims_path, train=True, n_data=None, mode='x_gen'):
+    def __init__(self, ims_path, train=True, n_data=None, mode='silhouette'):
         super(ImagenetCounterfactual, self).__init__()
         print(f"Loading counterfactual data from {ims_path}")
         self.full_df = self.get_data(ims_path, train, mode)
@@ -186,7 +185,6 @@ class ImagenetCounterfactual(Dataset):
         subdirs = glob(p + '/train*') if train else glob(p + '/val*')
 
         dfs = []
-        print(subdirs)
         for sub in subdirs:
             df = pd.read_csv(join(sub, 'labels.csv'), index_col=0)
             df['abs_path'] = sub + '/ims/' + df['im_name'] + f"_{mode}.jpg"

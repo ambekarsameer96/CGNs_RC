@@ -206,7 +206,7 @@ def main_worker(gpu, ngpus_per_node, args):
                                dl_shape_bias, dls_in9, args)
 
         # remember best acc@1 and save checkpoint
-        acc1_overall = metrics['acc1/1_real']
+        acc1_overall = metrics['acc1/0_overall']
         is_best = acc1_overall > best_acc1_overall
         best_acc1_overall = max(acc1_overall, best_acc1_overall)
 
@@ -558,7 +558,7 @@ if __name__ == '__main__':
                         help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: resnet18)')
-    parser.add_argument('-j', '--workers', default=3, type=int, metavar='N',
+    parser.add_argument('-j', '--workers', default=6, type=int, metavar='N',
                         help='number of data loading workers (default: 4)')
     parser.add_argument('--epochs', default=45, type=int, metavar='N',
                         help='number of total epochs to run')
