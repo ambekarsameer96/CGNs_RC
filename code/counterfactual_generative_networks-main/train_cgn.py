@@ -18,7 +18,7 @@ from imagenet.models import CGN
 from imagenet.config import get_cfg_defaults
 from shared.losses import *
 from utils import Optimizers
-
+from inception_score import inception_score
 
 def save_sample_sheet(cgn, u_fixed, sample_path, ep_str):
     cgn.eval()
@@ -80,7 +80,7 @@ def save_sample_single(cgn, u_fixed, sample_path, ep_str):
     cgn.train()
 
 def fit(cfg, cgn, opts, losses):
-
+    inc_score = list()
     # total number of episodes, accounted for batch accumulation
     episodes = cfg.TRAIN.EPISODES
     episodes *= cfg.TRAIN.BATCH_ACC
@@ -89,7 +89,9 @@ def fit(cfg, cgn, opts, losses):
     time_str = datetime.now().strftime("%Y_%m_%d_%H_%M")
     if cfg.WEIGHTS_PATH:
         weights_path = str(pathlib.Path(cfg.WEIGHTS_PATH).parent)
-        start_ep = int(pathlib.Path(cfg.WEIGHTS_PATH).stem[3:])
+        print(f"{weights_path}")
+        print(f"{pathlib.Path(cfg.WEIGHTS_PATH).stem[4:]}")
+        start_ep = int(pathlib.Path(cfg.WEIGHTS_PATH).stem[4:])
         sample_path = weights_path.replace('weights', 'samples')
         ep_range = (start_ep, start_ep + episodes)
     else:
@@ -145,11 +147,18 @@ def fit(cfg, cgn, opts, losses):
         # Logging
         if cfg.LOG.LOSSES:
             msg = ''.join([f"[{k}: {v:.3f}]" for k, v in losses_g.items()])
-            pbar.set_description(msg)
-        # Calculate Inception SCore
+        
+        # Save inception score
         if cfg.LOG.INCEPTION_SCORE:
-            score, score_std = get_inception_score(x_gen)
-            inception_score.append(score)
+          msg += f"{x_gen.shape}+{x_gen.max()}+{x_gen.min()}"
+          IS, IS_std = inception_score(x_gen, resize=True)
+          pbar.set_description(msg+f"IS: {IS}")
+          inc_score.append(IS)
+      
+    # Printing it for now, visualize later
+    print(f"All IS Score = {inception_score}")
+    # Mean IS score
+    print(f"Average IS = {inception_score/len(inception_score)}")
 
 def main(cfg):
     # model init
@@ -181,11 +190,11 @@ def main(cfg):
 
     # push to device and train
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f'Starting on the device = {device}')
     cgn = cgn.to(device)
     losses = (l.to(device) for l in losses)
 
     fit(cfg, cgn, opts, losses)
-
 
 def merge_args_and_cfg(args, cfg):
     cfg.MODEL_NAME = args.model_name
@@ -195,7 +204,7 @@ def merge_args_and_cfg(args, cfg):
     cfg.LOG.SAVE_SINGLES = args.save_singles
     cfg.LOG.SAVE_ITER = args.save_iter
     cfg.LOG.LOSSES = args.log_losses
-
+    cfg.LOG.INCEPTION_SCORE = True
     cfg.TRAIN.EPISODES = args.episodes
     cfg.TRAIN.BATCH_SZ = args.batch_sz
     cfg.TRAIN.BATCH_ACC = args.batch_acc
