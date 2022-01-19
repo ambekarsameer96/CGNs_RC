@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Download Colored MNIST
-gdown https://drive.google.com/u/0/uc?export=download&confirm=rHtT&id=1NSv4RCSHjcHois3dXjYw_PaLIoVlLgXu
+gdown https://drive.google.com/u/0/uc?id=1NSv4RCSHjcHois3dXjYw_PaLIoVlLgXu&export=download
 tar -xzvf colored_mnist.tar.gz
 mv colored_mnist mnists/data
 rm colored_mnist.tar.gz
