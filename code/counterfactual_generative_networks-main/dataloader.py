@@ -16,8 +16,6 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.distributed import Sampler
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
-from pytorch_gan_metrics import ImageDataset
-
 
 # helper functions
 

@@ -213,12 +213,12 @@ def main(args):
     generated_images = torch.stack(generated_images, 0)
     generated_images = generated_images.squeeze()
     generated_images = generated_images.cpu()
-
+    
     print(np.asarray(generated_images).shape)
     IS, IS_std = inception_score(generated_images,batch_size=args.batch_sz, resize=True)
     # pbar.set_description(msg+f"IS: {IS}")
     # inc_score.append(IS)
-    print(f"Inception Score for the Given CGN = {IS}")
+    print(f"Inception Score for the Given CGN = {IS}")  
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

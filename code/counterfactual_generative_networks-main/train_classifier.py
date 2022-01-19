@@ -38,7 +38,6 @@ model_names = sorted(name for name in models.__dict__
 
 best_acc1_overall = 0
 
-
 def main(args):
 
     if args.seed is not None:
