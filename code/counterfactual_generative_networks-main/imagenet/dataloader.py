@@ -16,8 +16,6 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.distributed import Sampler
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
-from pytorch_gan_metrics import ImageDataset
-
 
 # helper functions
 
@@ -88,10 +86,12 @@ class DistributedSampler(Sampler):
         """
         self.epoch = epoch
 
+
 def transform_labels(x):
     return torch.tensor(x).to(torch.int64)
 
 # datasets
+
 
 class ImagenetVanilla(Dataset) :
 
@@ -103,10 +103,10 @@ class ImagenetVanilla(Dataset) :
 
         # Transforms
         if train:
-            ims_path = join(root, 'imagenet', 'train')
+            ims_path = join(root, 'mini-imagenet', 'train')
             t_list = [transforms.RandomResizedCrop(224), transforms.RandomHorizontalFlip()]
         else:
-            ims_path = join(root, 'imagenet', 'val')
+            ims_path = join(root, 'mini-imagenet', 'val')
             t_list = [transforms.Resize(256), transforms.CenterCrop(224)]
 
         t_list += [transforms.ToTensor(), normalize]
@@ -140,6 +140,7 @@ class ImagenetVanilla(Dataset) :
     def __len__(self):
         return len(self.im_paths)
 
+
 class ImagenetCounterfactual(Dataset):
     '''
     args:
@@ -152,7 +153,7 @@ class ImagenetCounterfactual(Dataset):
           "RUN_NAME_0000000_textures.jpg"
     '''
 
-    def __init__(self, ims_path, train=True, n_data=None, mode='silhouette'):
+    def __init__(self, ims_path, train=True, n_data=None, mode='x_gen'):
         super(ImagenetCounterfactual, self).__init__()
         print(f"Loading counterfactual data from {ims_path}")
         self.full_df = self.get_data(ims_path, train, mode)

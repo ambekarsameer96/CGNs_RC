@@ -22,8 +22,10 @@ repackage.up()
 from imagenet.models import CGN
 from inception_score import inception_score
 
+
 def save_image(im, path):
     torchvision.utils.save_image(im.detach().cpu(), path, normalize=True)
+
 
 def interp(x0, x1, num_midpoints):
     '''
@@ -31,6 +33,7 @@ def interp(x0, x1, num_midpoints):
     '''
     lerp = torch.linspace(0, 1.0, num_midpoints + 2, device=x0.device).to(x0.dtype)
     return ((x0 * (1 - lerp.view(1, -1, 1))) + (x1 * lerp.view(1, -1, 1)))
+
 
 def interp_sheet(cgn, mode, ys, y_interp, num_midpoints, save_path,
                  save_single=False, save_noise=True):
@@ -124,6 +127,7 @@ def interp_sheet(cgn, mode, ys, y_interp, num_midpoints, save_path,
             idx = str(i).zfill(5)
             save_image(x_gen[i], x_gen_file.replace('.jpg', idx + '.jpg'))
 
+
 # Lists of best or most interesting shape/texture/background classes
 # (Yes, I know all imagenet classes very well by now)
 MASKS = [9, 18, 22, 35, 56, 63, 96, 97, 119, 207, 225, 260, 275, 323, 330, 350, 370, 403, 411,
@@ -140,6 +144,7 @@ BACKGROUNDS = [7, 9, 20, 30, 35, 46, 50, 65, 72, 93, 96, 97, 119, 133, 147, 337,
                383, 429, 460, 693, 801, 888, 947, 949, 952, 953, 955, 958, 970, 972, 973, 974,
                977, 979, 998]
 
+
 def sample_classes(mode, classes=None):
     if mode == 'random':
         return np.random.randint(0, 1000, 3).tolist()
@@ -154,6 +159,7 @@ def sample_classes(mode, classes=None):
 
     else:
         assert ValueError("Unknown sample mode {mode}")
+
 
 def main(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -219,6 +225,7 @@ def main(args):
     # pbar.set_description(msg+f"IS: {IS}")
     # inc_score.append(IS)
     print(f"Inception Score for the Given CGN = {IS}")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
