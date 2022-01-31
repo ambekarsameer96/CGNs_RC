@@ -1,7 +1,6 @@
 import argparse
 from datetime import datetime
 from pathlib import Path
-from pickle import TRUE
 import numpy as np
 from tqdm import tqdm
 
@@ -11,8 +10,6 @@ repackage.up()
 import torch
 import torch.nn.functional as F
 from torchvision.utils import save_image
-
-from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
 
 from mnists.config import get_cfg_defaults
 from mnists.dataloader import get_dataloaders
@@ -114,30 +111,11 @@ def fit(cfg, cgn, discriminator, dataloader, opts, losses, device):
                 sample_image(cgn, sample_path, batches_done, device, n_row=3)
                 torch.save(cgn.state_dict(), f"{weights_path}/ckp_{batches_done:d}.pth")
 
-            if args.ssim_flag:
-                #ssim loss
-                _x_gen = Variable( x_gen,  requires_grad=True)
-                _x_gt =  Variable( x_gt,  requires_grad=False)
-                #print('x_gen', x_gen.shape)
-                #print('x_gt', x_gt.shape)
-                
-                ssim_loss = SSIM(data_range=1., channel=3)
-                _ssim_loss = 1-ssim_loss(_x_gt, _x_gen)
-                _ssim_loss.backward()
-                ssim_value = ssim(_x_gt, _x_gen).item()
-                ssim_tot += ssim_value
-                #print(ssim_value)
-                #ssim value mean values
-
-
-
             # Logging
             if cfg.LOG.LOSSES:
                 msg = f"[Batch {i}/{len(dataloader)}]"
                 msg += ''.join([f"[{k}: {v:.3f}]" for k, v in losses_d.items()])
                 msg += ''.join([f"[{k}: {v:.3f}]" for k, v in losses_g.items()])
-                if args.ssim_flag:
-                    msg += ''.join({f'ssim {ssim_value}'})
                 pbar.set_description(msg)
 
 def main(cfg):
@@ -178,16 +156,6 @@ def merge_args_and_cfg(args, cfg):
     cfg.TRAIN.BATCH_SIZE = args.batch_size
     return cfg
 
-def parse_boolean(value):
-    value = value.lower()
-
-    if value in ["true", "yes", "y", "1", "t"]:
-        return True
-    elif value in ["false", "no", "n", "0", "f"]:
-        return False
-
-    return False
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--cfg', type=str, default='',
@@ -200,7 +168,6 @@ if __name__ == "__main__":
                         help="number of epochs of training")
     parser.add_argument("--batch_size", type=int, default=16,
                         help="size of the batches")
-    parser.add_argument("--ssim_flag",  type = parse_boolean, default =TRUE, help = "Should be true or false, Default is false")
     args = parser.parse_args()
 
     # get cfg
