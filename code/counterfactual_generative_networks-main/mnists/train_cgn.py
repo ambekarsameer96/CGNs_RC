@@ -11,6 +11,7 @@ repackage.up()
 import torch
 import torch.nn.functional as F
 from torchvision.utils import save_image
+from torch.autograd import Variable
 
 from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
 
@@ -55,6 +56,7 @@ def fit(cfg, cgn, discriminator, dataloader, opts, losses, device):
 
     pbar = tqdm(range(cfg.TRAIN.EPOCHS))
     for epoch in pbar:
+        ssim_tot = 0
         for i, data in enumerate(dataloader):
 
             # Data and adversarial ground truths to device
