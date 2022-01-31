@@ -73,7 +73,10 @@ def batch_predict(images):
     batch = batch.to(device)
 
     logits = model(batch)
-    probs = F.softmax(logits['avg_preds'], dim=1)
+    if isinstance(logits, dict):
+      probs = F.softmax(logits['avg_preds'], dim=1)
+    else:
+      probs = F.softmax(logits, dim=1)
     return probs.detach().cpu().numpy()
 
 
@@ -86,15 +89,20 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # Choose the type of model
     model = InvariantEnsemble('resnet50', True)
-    checkpoint = torch.load(args.model_loc)
-    # create new OrderedDict that does not contain `module.`
-    state_dict = checkpoint['state_dict']
-    new_state_dict = OrderedDict()
-    for k, v in state_dict.items():
-        name = k[7:] # remove `module.`
-        new_state_dict[name] = v
-    # load params
-    model.load_state_dict(new_state_dict)
+    if args.model_loc:
+      print("Inside model loc")
+      checkpoint = torch.load(args.model_loc)
+      # create new OrderedDict that does not contain `module.`
+      state_dict = checkpoint['state_dict']
+      new_state_dict = OrderedDict()
+      for k, v in state_dict.items():
+          name = k[7:] # remove `module.`
+          new_state_dict[name] = v
+      # load params
+      model.load_state_dict(new_state_dict)
+    else:
+      print("Not inside model loc")
+      model = models.inception_v3(pretrained=True)
     img = get_image(args.image_loc)
     idx2label, cls2label, cls2idx = [], {}, {}
     with open('imagenet/data/imagenet_class_index.json', 'r') as read_file:
@@ -105,10 +113,13 @@ if __name__ == '__main__':
 
     img_t = get_input_tensors(img)
     model.eval()
-    logits = model(img_t)['avg_preds']
+    if args.model_loc:
+      logits = model(img_t)['avg_preds']
+    else:
+      logits = model(img_t)
     probs = F.softmax(logits, dim=1)
     probs5 = probs.topk(5)
-    tuple((p,c, idx2label[c]) for p, c in zip(probs5[0][0].detach().numpy(), probs5[1][0].detach().numpy()))
+    print(tuple((p,c, idx2label[c]) for p, c in zip(probs5[0][0].detach().numpy(), probs5[1][0].detach().numpy())))
     test_pred = batch_predict([pill_transf(img)])
     test_pred.squeeze().argmax()
     explainer = lime_image.LimeImageExplainer()
@@ -120,4 +131,4 @@ if __name__ == '__main__':
     temp, mask = explanation.get_image_and_mask(explanation.top_labels[0], positive_only=False, num_features=10, hide_rest=False)
     img_boundry2 = mark_boundaries(temp/255.0, mask)
     plt.imshow(img_boundry2)
-    plt.savefig("lime_out_region.png")
+    plt.savefig("img_boundry2.png")
