@@ -188,6 +188,7 @@ def main(args):
         for i in trange(args.n_data):
             # sample class vector and set up the save path
             ys = sample_classes(args.mode, args.classes)
+            # ys = [c,c,c]
             im_name = f'{args.run_name}_{i:07}'
 
             if args.interp:

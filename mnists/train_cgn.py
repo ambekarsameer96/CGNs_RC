@@ -168,12 +168,17 @@ if __name__ == "__main__":
                         help="number of epochs of training")
     parser.add_argument("--batch_size", type=int, default=16,
                         help="size of the batches")
+    parser.add_argument("--idx", type=int, default=-1)
+    parser.add_argument("--val", type=float, default=-1)
     args = parser.parse_args()
 
     # get cfg
     cfg = load_cfg(args.cfg) if args.cfg else get_cfg_defaults()
     # add additional arguments in the argparser and in the function below
     cfg = merge_args_and_cfg(args, cfg)
+    if args.idx > -1:
+        cfg.LAMBDAS.PERC[args.idx] = args.val
+        print(args.val)
 
     print(cfg)
     main(cfg)

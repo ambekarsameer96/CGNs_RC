@@ -21,7 +21,8 @@ class CGN(nn.Module):
         # pretrained weights
         biggan_weights = 'imagenet/weights/biggan256.pth' if pretrained else None
         u2net_weights = 'imagenet/weights/u2net.pth' if pretrained else None
-
+        print('PRETRAINED?', pretrained)
+        print(biggan_weights)
         # The unconstrained cGAN
         self.biggan_GT = BigGAN.initialize(biggan_weights).eval()
         toggle_grad(self.biggan_GT, False)
