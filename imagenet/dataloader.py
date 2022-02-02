@@ -60,7 +60,7 @@ class DistributedSampler(Sampler):
 
 
         if not self.drop_last:
-            # add extra samples to make it evenly divisible
+            # add extra samples_colored to make it evenly divisible
             indices += indices[:(self.total_size - len(indices))]
         else:
             # remove tail of data to make it evenly divisible.

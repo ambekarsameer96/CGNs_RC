@@ -84,7 +84,7 @@ class CGN(nn.Module):
             1. cgn(): randomly choose classes, it is the same class
                for all IMs (the standard mode for training
             2. cgn(inp=(u, y, trunc)): sample input before pass, useful
-               for fixed noise samples
+               for fixed noise samples_colored
             3. cgn(ys=[10, 5, 32]): list with 3 classes, a class for
                every IM (m, fg, bg)
         """

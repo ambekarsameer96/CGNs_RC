@@ -89,13 +89,13 @@ def fit(cfg, cgn, opts, losses):
     if cfg.WEIGHTS_PATH:
         weights_path = str(pathlib.Path(cfg.WEIGHTS_PATH).parent)
         start_ep = int(pathlib.Path(cfg.WEIGHTS_PATH).stem[3:])
-        sample_path = weights_path.replace('weights', 'samples')
+        sample_path = weights_path.replace('weights', 'samples_colored')
         ep_range = (start_ep, start_ep + episodes)
     else:
         model_path = join('imagenet', 'experiments',
                           f'cgn_{time_str}_{cfg.MODEL_NAME}')
         weights_path = join(model_path, 'weights')
-        sample_path = join(model_path, 'samples')
+        sample_path = join(model_path, 'samples_colored')
         pathlib.Path(weights_path).mkdir(parents=True, exist_ok=True)
         pathlib.Path(sample_path).mkdir(parents=True, exist_ok=True)
         ep_range = (0, episodes)
@@ -200,7 +200,7 @@ def merge_args_and_cfg(args, cfg):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_name', default='tmp',
-                        help='Weights and samples will be saved under experiments/model_name')
+                        help='Weights and samples_colored will be saved under experiments/model_name')
     parser.add_argument('--weights_path', default='',
                         help='provide path to continue training')
     parser.add_argument('--sampled_fixed_noise', default=False, action='store_true',
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     parser.add_argument('--batch_acc', type=int, default=4000,
                         help='pseudo_batch_size = batch_acc*batch size')
     parser.add_argument('--save_iter', type=int, default=4000,
-                        help='Save samples/weights every n iter')
+                        help='Save samples_colored/weights every n iter')
     parser.add_argument('--log_losses', default=False, action='store_true',
                         help='Print out losses')
     args = parser.parse_args()

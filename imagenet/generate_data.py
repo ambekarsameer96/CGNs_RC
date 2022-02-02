@@ -232,7 +232,7 @@ if __name__ == '__main__':
                         choices=['', 'all', 'shape', 'text', 'bg'],
                         help='Save interpolation sheet instead of single ims.')
     parser.add_argument('--interp_cls', type=int, default=-1,
-                        help='Classes to which we interpolate. val=-1 samples a random class.')
+                        help='Classes to which we interpolate. val=-1 samples_colored a random class.')
     parser.add_argument('--midpoints', type=int, default=6,
                         help='How many midpoints for the interpolation')
     parser.add_argument('--save_noise', default=False, action='store_true',
