@@ -60,6 +60,8 @@ if __name__ == "__main__":
                         help='Size of the dataset. For counterfactual data: the more the better.')
     parser.add_argument('--no_cfs', type=int, default=1,
                         help='How many counterfactuals to sample per datapoint')
+    parser.add_argument('--ablation', type=bool, default=False, metavar='A',
+                        help="Whether to ablate how many cf images used")
     args = parser.parse_args()
     print(args)
 
@@ -78,14 +80,17 @@ if __name__ == "__main__":
     # Generate counterfactual dataset
     else:
         # load model
-        for i in [1, 5, 10] if args.dataset == 'colored_MNIST' else [1, 5, 10, 20]:
-            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            cgn = CGN()
-            cgn.load_state_dict(torch.load(args.weight_path, 'cpu'))
-            cgn.to(device).eval()
-
-            # generate
-            print(f"Generating the counterfactual {args.dataset} of size {args.dataset_size}")
-            generate_cf_dataset(cgn=cgn, path=args.dataset + f'_counterfactual_{i}.pth',
-                                dataset_size=args.dataset_size, no_cfs=i,
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        cgn = CGN()
+        cgn.load_state_dict(torch.load(args.weight_path, 'cpu'))
+        cgn.to(device).eval()
+        if args.ablation:
+            for i in [1, 5, 10] if args.dataset == 'colored_MNIST' else [1, 5, 10, 20]:
+                print(f"Generating the counterfactual {args.dataset} of size {args.dataset_size}")
+                generate_cf_dataset(cgn=cgn, path=args.dataset + f'_counterfactual_{i}.pth',
+                                    dataset_size=args.dataset_size, no_cfs=i,
+                                    device=device)
+        else:
+            generate_cf_dataset(cgn=cgn, path=args.dataset + f'_counterfactual.pth',
+                                dataset_size=args.dataset_size, no_cfs=args.no_cfs,
                                 device=device)
