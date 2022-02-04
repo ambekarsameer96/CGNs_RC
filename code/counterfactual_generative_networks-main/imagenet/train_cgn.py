@@ -18,6 +18,7 @@ from imagenet.models import CGN
 from imagenet.config import get_cfg_defaults
 from shared.losses import *
 from utils import Optimizers
+from inception_score import *
 
 def save_sample_sheet(cgn, u_fixed, sample_path, ep_str):
     cgn.eval()
@@ -51,6 +52,7 @@ def save_sample_sheet(cgn, u_fixed, sample_path, ep_str):
     torchvision.utils.save_image(torch.cat(to_save, 1), path)
     cgn.train()
 
+
 def save_sample_single(cgn, u_fixed, sample_path, ep_str):
     cgn.eval()
     dev = u_fixed.to(cgn.get_device())
@@ -78,8 +80,9 @@ def save_sample_single(cgn, u_fixed, sample_path, ep_str):
 
     cgn.train()
 
-def fit(cfg, cgn, opts, losses):
 
+def fit(cfg, cgn, opts, losses):
+    inception_score_val = list()
     # total number of episodes, accounted for batch accumulation
     episodes = cfg.TRAIN.EPISODES
     episodes *= cfg.TRAIN.BATCH_ACC
@@ -145,6 +148,11 @@ def fit(cfg, cgn, opts, losses):
         if cfg.LOG.LOSSES:
             msg = ''.join([f"[{k}: {v:.3f}]" for k, v in losses_g.items()])
             pbar.set_description(msg)
+        # Calculate Inception SCore
+        if cfg.LOG.INCEPTION_SCORE:
+            score, score_std = inception_score(x_gen)
+            inception_score_val.append(score)
+
 
 def main(cfg):
     # model init
@@ -153,7 +161,8 @@ def main(cfg):
         truncation=cfg.MODEL.TRUNCATION,
         pretrained=True,
     )
-
+    print("------CGN-------")
+    print(cgn)
     if cfg.WEIGHTS_PATH:
         weights = torch.load(cfg.WEIGHTS_PATH)
         weights = {k.replace('module.', ''): v for k, v in weights.items()}
@@ -181,6 +190,7 @@ def main(cfg):
 
     fit(cfg, cgn, opts, losses)
 
+
 def merge_args_and_cfg(args, cfg):
     cfg.MODEL_NAME = args.model_name
     cfg.WEIGHTS_PATH = args.weights_path
@@ -189,13 +199,14 @@ def merge_args_and_cfg(args, cfg):
     cfg.LOG.SAVE_SINGLES = args.save_singles
     cfg.LOG.SAVE_ITER = args.save_iter
     cfg.LOG.LOSSES = args.log_losses
+    cfg.LOG.INCEPTION_SCORE = True
 
     cfg.TRAIN.EPISODES = args.episodes
     cfg.TRAIN.BATCH_SZ = args.batch_sz
     cfg.TRAIN.BATCH_ACC = args.batch_acc
-
     cfg.MODEL.TRUNCATION = args.truncation
     return cfg
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

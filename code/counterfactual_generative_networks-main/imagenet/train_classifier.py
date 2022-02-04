@@ -38,6 +38,7 @@ model_names = sorted(name for name in models.__dict__
 
 best_acc1_overall = 0
 
+
 def main(args):
 
     if args.seed is not None:
@@ -97,7 +98,7 @@ def main_worker(gpu, ngpus_per_node, args):
     # save path
     if not args.resume:
         time_str = datetime.now().strftime("%Y_%m_%d_%H_%M")
-        model_path = join('.', 'imagenet', 'experiments',
+        model_path = join('', 'imagenet', 'experiments',
                             f'classifier_{time_str}_{args.name}')
         pathlib.Path(model_path).mkdir(parents=True, exist_ok=True)
         # dump current args in this folder
@@ -165,15 +166,18 @@ def main_worker(gpu, ngpus_per_node, args):
             print("=> no checkpoint found at '{}'".format(args.resume))
 
     cudnn.benchmark = True
-    
+
 
     ### dataloaders
     train_loader, val_loader, train_sampler = get_imagenet_dls(args.distributed, args.batch_size, args.workers)
-    cf_train_loader, cf_val_loader, cf_train_sampler = get_cf_imagenet_dls(args.cf_data, args.cf_ratio, len(train_loader), args.distributed, args.batch_size, args.workers)
+    if args.cf_ratio > 0:
+        cf_train_loader, cf_val_loader, cf_train_sampler = get_cf_imagenet_dls(args.cf_data, args.cf_ratio, len(train_loader), args.distributed, args.batch_size, args.workers)
+    else:
+        cf_train_loader = cf_val_loader = cf_train_sampler = None
     dl_shape_bias = get_cue_conflict_dls(args.batch_size, args.workers)
     dls_in9 = get_in9_dls(args.distributed, args.batch_size, args.workers, ['mixed_rand', 'mixed_same'])
 
-    
+
     # eval before training
     if not args.resume:
         metrics = validate(model, val_loader, cf_val_loader,
@@ -192,9 +196,10 @@ def main_worker(gpu, ngpus_per_node, args):
 
         if args.distributed:
             train_sampler.set_epoch(epoch)
-            cf_train_sampler.set_epoch(epoch)
-
-        cf_train_loader.dataset.resample()
+            if args.cf_ratio > 0.0:
+                cf_train_sampler.set_epoch(epoch)
+        if args.cf_ratio > 0.0:
+            cf_train_loader.dataset.resample()
         adjust_learning_rate(optimizer, epoch, args)
 
         # train for one epoch
@@ -206,7 +211,7 @@ def main_worker(gpu, ngpus_per_node, args):
                                dl_shape_bias, dls_in9, args)
 
         # remember best acc@1 and save checkpoint
-        acc1_overall = metrics['acc1/0_overall']
+        acc1_overall = metrics['acc1/1_real']
         is_best = acc1_overall > best_acc1_overall
         best_acc1_overall = max(acc1_overall, best_acc1_overall)
 
@@ -267,63 +272,108 @@ def train(train_loader, cf_train_loader, model, criterion, optimizer, epoch, arg
     model.apply(set_bn_eval)
 
     end = time.time()
-    for i, (data, data_cf) in enumerate(zip(train_loader, cf_train_loader)):
-        # measure data loading time
-        data_time.update(time.time() - end)
+    # Rewrite the train loop without the cf_loader
 
-        if args.gpu is not None or torch.cuda.is_available():
-            data = {k: v.cuda(args.gpu, non_blocking=True) for k, v in data.items()}
-            data_cf = {k: v.cuda(args.gpu, non_blocking=True) for k, v in data_cf.items()}
+    if cf_train_loader:
+        for i, (data, data_cf) in enumerate(zip(train_loader, cf_train_loader)):
+            # measure data loading time
+            data_time.update(time.time() - end)
 
-        # compute output
-        out = model(data['ims'])
-        loss = criterion(out['avg_preds'], data['labels'])
+            if args.gpu is not None or torch.cuda.is_available():
+                data = {k: v.cuda(args.gpu, non_blocking=True) for k, v in data.items()}
+                data_cf = {k: v.cuda(args.gpu, non_blocking=True) for k, v in data_cf.items()}
 
-        # compute gradient
-        loss.backward()
+            # compute output
+            out = model(data['ims'])
+            loss = criterion(out['avg_preds'], data['labels'])
 
-        # compute output for counterfactuals
-        out_cf = model(data_cf['ims'])
-        loss_cf = criterion(out_cf['shape_preds'], data_cf['shape_labels'])
-        loss_cf += criterion(out_cf['texture_preds'], data_cf['texture_labels'])
-        loss_cf += criterion(out_cf['bg_preds'], data_cf['bg_labels'])
+            # compute gradient
+            loss.backward()
 
-        # compute gradient
-        loss_cf.backward()
+            # compute output for counterfactuals
+            out_cf = model(data_cf['ims'])
+            loss_cf = criterion(out_cf['shape_preds'], data_cf['shape_labels'])
+            loss_cf += criterion(out_cf['texture_preds'], data_cf['texture_labels'])
+            loss_cf += criterion(out_cf['bg_preds'], data_cf['bg_labels'])
 
-        # measure accuracy and record loss
-        sz = len(data['ims'])
-        acc1, acc5 = accuracy(out['avg_preds'], data['labels'], topk=(1, 5))
-        losses.update(loss.item(), data['ims'].size(0))
-        cf_losses.update(loss_cf.item(), data['ims'].size(0))
-        top1_real.update(acc1[0], sz)
-        top5_real.update(acc5[0], sz)
-        acc1, acc5 = accuracy(out_cf['shape_preds'], data_cf['shape_labels'], topk=(1, 5))
-        top1_shape.update(acc1[0], sz)
-        top5_shape.update(acc5[0], sz)
-        acc1, acc5 = accuracy(out_cf['texture_preds'], data_cf['texture_labels'], topk=(1, 5))
-        top1_texture.update(acc1[0], sz)
-        top5_texture.update(acc5[0], sz)
-        acc1, acc5 = accuracy(out_cf['bg_preds'], data_cf['bg_labels'], topk=(1, 5))
-        top1_bg.update(acc1[0], sz)
-        top5_bg.update(acc5[0], sz)
+            # compute gradient
+            loss_cf.backward()
 
-        # Step
-        optimizer.step()
-        optimizer.zero_grad()
+            # measure accuracy and record loss
+            sz = len(data['ims'])
+            acc1, acc5 = accuracy(out['avg_preds'], data['labels'], topk=(1, 5))
+            losses.update(loss.item(), data['ims'].size(0))
+            cf_losses.update(loss_cf.item(), data['ims'].size(0))
+            top1_real.update(acc1[0], sz)
+            top5_real.update(acc5[0], sz)
+            acc1, acc5 = accuracy(out_cf['shape_preds'], data_cf['shape_labels'], topk=(1, 5))
+            top1_shape.update(acc1[0], sz)
+            top5_shape.update(acc5[0], sz)
+            acc1, acc5 = accuracy(out_cf['texture_preds'], data_cf['texture_labels'], topk=(1, 5))
+            top1_texture.update(acc1[0], sz)
+            top5_texture.update(acc5[0], sz)
+            acc1, acc5 = accuracy(out_cf['bg_preds'], data_cf['bg_labels'], topk=(1, 5))
+            top1_bg.update(acc1[0], sz)
+            top5_bg.update(acc5[0], sz)
 
-        # measure elapsed time
-        batch_time.update(time.time() - end)
-        end = time.time()
+            # Step
+            optimizer.step()
+            optimizer.zero_grad()
 
-        # logging
-        if i % args.print_freq == 0:
-            progress.display(i)
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
+
+            # logging
+            if i % args.print_freq == 0:
+                progress.display(i)
+
+    else:
+        for i, data in enumerate(train_loader):
+            # measure data loading time
+            data_time.update(time.time() - end)
+
+            if args.gpu is not None or torch.cuda.is_available():
+                data = {k: v.cuda(args.gpu, non_blocking=True) for k, v in data.items()}
+
+            # compute output
+            out = model(data['ims'])
+            loss = criterion(out['avg_preds'], data['labels'])
+
+            # compute gradient
+            loss.backward()
+            # measure accuracy and record loss
+            sz = len(data['ims'])
+            acc1, acc5 = accuracy(out['avg_preds'], data['labels'], topk=(1, 5))
+            losses.update(loss.item(), data['ims'].size(0))
+            top1_real.update(acc1[0], sz)
+            top5_real.update(acc5[0], sz)
+            top1_shape.update(acc1[0], sz)
+            top5_shape.update(acc5[0], sz)
+            top1_texture.update(acc1[0], sz)
+            top5_texture.update(acc5[0], sz)
+            top1_bg.update(acc1[0], sz)
+            top5_bg.update(acc5[0], sz)
+
+            # Step
+            optimizer.step()
+            optimizer.zero_grad()
+
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
+
+            # logging
+            if i % args.print_freq == 0:
+                progress.display(i)
 
 
 def validate(model, val_loader, cf_val_loader, dl_shape_bias, dls_in9, args):
     real_accs = validate_imagenet(val_loader, model, args)
-    cf_accs = validate_counterfactual(cf_val_loader, model, args)
+    if cf_val_loader:
+        cf_accs = validate_counterfactual(cf_val_loader, model, args)
+    else:
+        cf_accs = {}
     shapes_biases = validate_shape_bias(model, dl_shape_bias)
     in_9_accs = validate_in_9(dls_in9, model)
     val_res = {**real_accs, **cf_accs, **shapes_biases, **in_9_accs}
