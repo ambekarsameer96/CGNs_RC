@@ -1,32 +1,25 @@
 import argparse
 from datetime import datetime
 from pathlib import Path
-from pickle import TRUE
 import numpy as np
 from tqdm import tqdm
 
 import repackage
-
 repackage.up()
 
 import torch
 import torch.nn.functional as F
 from torchvision.utils import save_image
-from torch.autograd import Variable
-
-from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
 
 from mnists.config import get_cfg_defaults
-from mnists.dataloader import get_dataloaders
+from mnists.dataloader_augment import get_dataloaders
 from mnists.models import CGN, DiscLin, DiscConv
 from utils import save_cfg, load_cfg, children, hook_outputs, Optimizers
 from shared.losses import BinaryLoss, PerceptualLoss
 
-
 def save(x, path, n_row, sz=64):
     x = F.interpolate(x, (sz, sz))
     save_image(x.data, path, nrow=n_row, normalize=True, padding=2)
-
 
 def sample_image(cgn, sample_path, batches_done, device, n_row=3, n_classes=10):
     """Saves a grid of generated digits"""
@@ -40,8 +33,8 @@ def sample_image(cgn, sample_path, batches_done, device, n_row=3, n_classes=10):
     save(foreground.data, f"{sample_path}/2_{batches_done:d}_foreground.png", n_row)
     save(background.data, f"{sample_path}/3_{batches_done:d}_background.png", n_row)
 
-
 def fit(cfg, cgn, discriminator, dataloader, opts, losses, device):
+
     # directories for experiments
     time_str = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     model_path = Path('.') / 'mnists' / 'experiments'
@@ -59,14 +52,13 @@ def fit(cfg, cgn, discriminator, dataloader, opts, losses, device):
 
     pbar = tqdm(range(cfg.TRAIN.EPOCHS))
     for epoch in pbar:
-        ssim_tot = 0
         for i, data in enumerate(dataloader):
 
             # Data and adversarial ground truths to device
             x_gt = data['ims'].to(device)
             y_gt = data['labels'].to(device)
-            valid = torch.ones(len(y_gt), ).to(device)
-            fake = torch.zeros(len(y_gt), ).to(device)
+            valid = torch.ones(len(y_gt),).to(device)
+            fake = torch.zeros(len(y_gt),).to(device)
 
             #
             #  Train Generator
@@ -119,30 +111,12 @@ def fit(cfg, cgn, discriminator, dataloader, opts, losses, device):
                 sample_image(cgn, sample_path, batches_done, device, n_row=3)
                 torch.save(cgn.state_dict(), f"{weights_path}/ckp_{batches_done:d}.pth")
 
-            if args.ssim_flag:
-                # ssim loss
-                _x_gen = Variable(x_gen, requires_grad=True)
-                _x_gt = Variable(x_gt, requires_grad=False)
-                # print('x_gen', x_gen.shape)
-                # print('x_gt', x_gt.shape)
-
-                ssim_loss = SSIM(data_range=1., channel=3)
-                _ssim_loss = 1 - ssim_loss(_x_gt, _x_gen)
-                _ssim_loss.backward()
-                ssim_value = ssim(_x_gt, _x_gen).item()
-                ssim_tot += ssim_value
-                # print(ssim_value)
-                # ssim value mean values
-
             # Logging
             if cfg.LOG.LOSSES:
                 msg = f"[Batch {i}/{len(dataloader)}]"
                 msg += ''.join([f"[{k}: {v:.3f}]" for k, v in losses_d.items()])
                 msg += ''.join([f"[{k}: {v:.3f}]" for k, v in losses_g.items()])
-                if args.ssim_flag:
-                    msg += ''.join({f'ssim {ssim_value}'})
                 pbar.set_description(msg)
-
 
 def main(cfg):
     # model init
@@ -175,25 +149,12 @@ def main(cfg):
 
     fit(cfg, cgn, discriminator, dataloader, opts, losses, device)
 
-
 def merge_args_and_cfg(args, cfg):
     cfg.MODEL_NAME = args.model_name
     cfg.LOG.SAVE_ITER = args.save_iter
     cfg.TRAIN.EPOCHS = args.epochs
     cfg.TRAIN.BATCH_SIZE = args.batch_size
     return cfg
-
-
-def parse_boolean(value):
-    value = value.lower()
-
-    if value in ["true", "yes", "y", "1", "t"]:
-        return True
-    elif value in ["false", "no", "n", "0", "f"]:
-        return False
-
-    return False
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -207,8 +168,6 @@ if __name__ == "__main__":
                         help="number of epochs of training")
     parser.add_argument("--batch_size", type=int, default=16,
                         help="size of the batches")
-    parser.add_argument("--ssim_flag", type=parse_boolean, default=FALSE,
-                        help="Should be true or false, Default is false")
     args = parser.parse_args()
 
     # get cfg
