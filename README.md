@@ -28,7 +28,7 @@ Make all scripts executable: ```chmod +x  scripts/*```. Then, download the datas
 ```
 
 ## MNIST Experiments ##
-<img src="code/counterfactual_generative_network-main/media/0_46000_x_gen_double_colored.png" width="100%">
+<img src="code/counterfactual_generative_networks-main/media/0_46000_x_gen_double_colored.png" width="100%">
 
 The main functions of this sub-repo are:
 - Generating the MNIST variants
@@ -89,7 +89,7 @@ single node with several GPUs, you can run, e.g.,
 ```
 
 ### Imagenet dataset
-<img src="code/counterfactual_generative_network-main/media/good_image_1.png" width="100%">
+<img src="code/counterfactual_generative_networks-main/media/good_image_1.png" width="100%">
 
 
 ## Test Inception score
@@ -139,7 +139,7 @@ python imagenet/train_classifier.py -a resnet50 -b 32 --lr 0.001 -j 6 \
 
 """
 ## Plotting Explainability heatmaps
-<img src="code/counterfactual_generative_network-main/media/ipod_lime_plot_1.png" width="100%">
+<img src="code/counterfactual_generative_networks-main/media/ipod_lime_plot_1.png" width="100%">
 
 
 Replace the --image_loc path with the image of your choice.
