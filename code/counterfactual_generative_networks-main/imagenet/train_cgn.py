@@ -19,7 +19,6 @@ from imagenet.config import get_cfg_defaults
 from shared.losses import *
 from utils import Optimizers
 
-
 def save_sample_sheet(cgn, u_fixed, sample_path, ep_str):
     cgn.eval()
     dev = u_fixed.to(cgn.get_device())
@@ -52,7 +51,6 @@ def save_sample_sheet(cgn, u_fixed, sample_path, ep_str):
     torchvision.utils.save_image(torch.cat(to_save, 1), path)
     cgn.train()
 
-
 def save_sample_single(cgn, u_fixed, sample_path, ep_str):
     cgn.eval()
     dev = u_fixed.to(cgn.get_device())
@@ -79,7 +77,6 @@ def save_sample_single(cgn, u_fixed, sample_path, ep_str):
             torchvision.utils.save_image(x_gen, path, normalize=True)
 
     cgn.train()
-
 
 def fit(cfg, cgn, opts, losses):
 
@@ -148,11 +145,6 @@ def fit(cfg, cgn, opts, losses):
         if cfg.LOG.LOSSES:
             msg = ''.join([f"[{k}: {v:.3f}]" for k, v in losses_g.items()])
             pbar.set_description(msg)
-        # Calculate Inception SCore
-        if cfg.LOG.INCEPTION_SCORE:
-            score, score_std = get_inception_score(x_gen)
-            inception_score.append(score)
-
 
 def main(cfg):
     # model init
@@ -189,7 +181,6 @@ def main(cfg):
 
     fit(cfg, cgn, opts, losses)
 
-
 def merge_args_and_cfg(args, cfg):
     cfg.MODEL_NAME = args.model_name
     cfg.WEIGHTS_PATH = args.weights_path
@@ -205,7 +196,6 @@ def merge_args_and_cfg(args, cfg):
 
     cfg.MODEL.TRUNCATION = args.truncation
     return cfg
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

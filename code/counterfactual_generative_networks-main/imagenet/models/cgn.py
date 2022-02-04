@@ -21,7 +21,8 @@ class CGN(nn.Module):
         # pretrained weights
         biggan_weights = 'imagenet/weights/biggan256.pth' if pretrained else None
         u2net_weights = 'imagenet/weights/u2net.pth' if pretrained else None
-
+        print('PRETRAINED?', pretrained)
+        print(biggan_weights)
         # The unconstrained cGAN
         self.biggan_GT = BigGAN.initialize(biggan_weights).eval()
         toggle_grad(self.biggan_GT, False)
@@ -83,7 +84,7 @@ class CGN(nn.Module):
             1. cgn(): randomly choose classes, it is the same class
                for all IMs (the standard mode for training
             2. cgn(inp=(u, y, trunc)): sample input before pass, useful
-               for fixed noise samples
+               for fixed noise samples_colored
             3. cgn(ys=[10, 5, 32]): list with 3 classes, a class for
                every IM (m, fg, bg)
         """
