@@ -202,7 +202,7 @@ if __name__ == "__main__":
                         help="number of epochs of training")
     parser.add_argument("--batch_size", type=int, default=16,
                         help="size of the batches")
-    parser.add_argument("--ssim_flag",  type = parse_boolean, default =TRUE, help = "Should be true or false, Default is false")
+    parser.add_argument("--ssim_flag",  type = parse_boolean, default =FALSE, help = "Should be true or false, Default is false")
     args = parser.parse_args()
 
     # get cfg

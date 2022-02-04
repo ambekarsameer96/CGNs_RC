@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from torchvision.utils import save_image
 
 from mnists.config import get_cfg_defaults
-from mnists.dataloader import get_dataloaders
+from mnists.dataloader_augment import get_dataloaders
 from mnists.models import CGN, DiscLin, DiscConv
 from utils import save_cfg, load_cfg, children, hook_outputs, Optimizers
 from shared.losses import BinaryLoss, PerceptualLoss
