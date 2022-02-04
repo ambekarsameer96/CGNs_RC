@@ -1,20 +1,6 @@
 # Counterfactual Generative Networks #
 
-#### [[Project]](https://sites.google.com/view/counterfactual-generation/home) [[PDF]](https://openreview.net/pdf?id=BXewfAYMmJw) [[Blog]](https://autonomousvision.github.io/cgn/) [[Music Video]](https://youtu.be/JDwaLueR35U) [[Colab]](https://colab.research.google.com/gist/xl-sr/ad93d3918e456fd4cd4aabdcaad87148/generating_counterfactuals.ipynb)
-<img src="media/teaser.gif" width="600">
-
-This repository contains the code for the ICLR 2021 paper "Counterfactual Generative Networks" by [Axel Sauer](https://axelsauer.com/) and [Andreas Geiger](http://www.cvlibs.net/).
-If you want to take the CGN for a spin and generate counterfactual images, you can try out the Colab below.
-
 [![CGN](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/gist/xl-sr/ad93d3918e456fd4cd4aabdcaad87148/generating_counterfactuals.ipynb) <br>
-
-If you find our code or paper useful, please cite
-```bibtex
-@inproceedings{Sauer2021ICLR,
- author =  {Axel Sauer, Andreas Geiger},
- title = {Counterfactual Generative Networks},
- booktitle = {International Conference on Learning Representations (ICLR)},
- year = {2021}}
 ```
 
 ## Setup ##
@@ -41,7 +27,7 @@ Make all scripts executable: ```chmod +x  scripts/*```. Then, download the datas
 ./scripts/download_weights.sh
 ```
 
-## MNISTs ##
+## MNIST Experiments ##
 <img src="media/mnist_real_cf.png" width="100%">
 
 The main functions of this sub-repo are:
@@ -88,7 +74,7 @@ python mnists/train_classifier.py --dataset wildlife_MNIST_counterfactual
 
 Add ```--help``` for info on the available options and arguments. The hyperparameters are unchanged for all experiments.
 
-## ImageNet ##
+## ImageNet Experiments ##
 
 The main functions of this sub-repo are:
 - Training a CGN
@@ -118,14 +104,6 @@ python imagenet/generate_data.py --mode random --weights_path imagenet/weights/c
 
 The results will be saved in ```imagenet/data```. For more info, add ```--help```. If you want to save only masks, textures, etc., you need to change this directly in the code (see line 206).
 
-
-The labels will be stored in a csv file. You can read them as follows:
-```Python
-import pandas as pd
-df = pd.read_csv(path, index_col=0)
-df = df.set_index('im_name')
-shape_cls = df['shape_cls']['RUN_NAME_0000000.png']
-```
 __Generating a dataset to train a classfier__. Produce one dataset with ```--run_name train```, the other
 one with ``` --run_name val```. If you have several GPUs available, you can index the name, e.g., ```--run_name
 train_GPU_NUM```. The class ```ImagenetCounterfactual``` will glob all these datasets and generate a single, big
