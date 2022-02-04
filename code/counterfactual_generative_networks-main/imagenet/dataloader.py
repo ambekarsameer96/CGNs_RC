@@ -86,25 +86,27 @@ class DistributedSampler(Sampler):
         """
         self.epoch = epoch
 
+
 def transform_labels(x):
     return torch.tensor(x).to(torch.int64)
 
 # datasets
 
+
 class ImagenetVanilla(Dataset) :
 
     def __init__(self, train=True):
         super(ImagenetVanilla, self).__init__()
-        root = join('.', 'imagenet', 'data')
+        root = join('', 'imagenet', 'data')
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                          std=[0.229, 0.224, 0.225])
 
         # Transforms
         if train:
-            ims_path = join(root, 'imagenet', 'train')
+            ims_path = join(root, 'mini-imagenet', 'train')
             t_list = [transforms.RandomResizedCrop(224), transforms.RandomHorizontalFlip()]
         else:
-            ims_path = join(root, 'imagenet', 'val')
+            ims_path = join(root, 'mini-imagenet', 'val')
             t_list = [transforms.Resize(256), transforms.CenterCrop(224)]
 
         t_list += [transforms.ToTensor(), normalize]
@@ -138,6 +140,7 @@ class ImagenetVanilla(Dataset) :
     def __len__(self):
         return len(self.im_paths)
 
+
 class ImagenetCounterfactual(Dataset):
     '''
     args:
@@ -150,7 +153,7 @@ class ImagenetCounterfactual(Dataset):
           "RUN_NAME_0000000_textures.jpg"
     '''
 
-    def __init__(self, ims_path, train=True, n_data=None, mode='silhouette'):
+    def __init__(self, ims_path, train=True, n_data=None, mode='x_gen'):
         super(ImagenetCounterfactual, self).__init__()
         print(f"Loading counterfactual data from {ims_path}")
         self.full_df = self.get_data(ims_path, train, mode)
@@ -308,6 +311,7 @@ def get_imagenet_dls(distributed, batch_size, workers):
 
     return train_loader, val_loader, train_sampler
 
+
 def get_cf_imagenet_dls(path, cf_ratio, len_dl_train, distributed, batch_size, workers):
     # determine how many images to use, based on given ratio
     cf_batch_sz = int(cf_ratio * batch_size)
@@ -330,13 +334,14 @@ def get_cf_imagenet_dls(path, cf_ratio, len_dl_train, distributed, batch_size, w
 
     return cf_train_loader, cf_val_loader, cf_train_sampler
 
+
 def get_cue_conflict_dls(batch_size, workers):
     return DataLoader(CueConflict(), batch_size=batch_size, pin_memory=True, num_workers=workers)
 
 def get_in9_dls(distributed, batch_size, workers, variations=['mixed_rand', 'mixed_same']):
     dls_in9 = {}
     for v in variations:
-        in9_ds = Imagenet9(join('.', 'imagenet', 'data', 'in9', v))
+        in9_ds = Imagenet9(join('', 'imagenet', 'data', 'in9', v))
         dls_in9[v] = in9_ds.make_loader(distributed=distributed,
                                         batch_size=batch_size,
                                         workers=workers)
