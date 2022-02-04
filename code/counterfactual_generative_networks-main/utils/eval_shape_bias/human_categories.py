@@ -6,8 +6,6 @@ of the 16 categories used in Robert's human and DNN
 experiments.
 
 """
-import numpy as np
-import os
 
 import utils.eval_shape_bias.wordnet_functions as wf
 

@@ -4,16 +4,17 @@ from pathlib import Path
 
 import torch
 import torch.nn.functional as F
-
+from random import shuffle
 from torch import tensor
 from torchvision import transforms
 from torchvision import datasets
-from torch.utils.data import Dataset, DataLoader, TensorDataset
+from torch.utils.data import Dataset, DataLoader, TensorDataset, Subset
+
 
 class ColoredMNIST(Dataset):
     def __init__(self, train, color_var=0.02):
         # get the colored mnist
-        self.data_path = 'mnists/data/colored_mnist/mnist_10color_jitter_var_%.03f.npy'%color_var
+        self.data_path = 'mnists/data/colored_mnist/mnist_10color_jitter_var_%.03f.npy' % color_var
         data_dic = np.load(self.data_path, encoding='latin1', allow_pickle=True).item()
 
         if train:
@@ -46,6 +47,7 @@ class ColoredMNIST(Dataset):
     def __len__(self):
         return self.ims.shape[0]
 
+
 class DoubleColoredMNIST(Dataset):
 
     def __init__(self, train=True):
@@ -69,10 +71,10 @@ class DoubleColoredMNIST(Dataset):
             'aqua', 'fuchsia', '#6495ed',
         ]
         # shift colors by X
-        colors2 = [colors1[i-6] for i in range(len(colors1))]
+        colors2 = [colors1[i - 6] for i in range(len(colors1))]
 
         def get_rgb(x):
-            t = torch.tensor(ImageColor.getcolor(x, "RGB"))/255.
+            t = torch.tensor(ImageColor.getcolor(x, "RGB")) / 255.
             return t.view(-1, 1, 1)
 
         self.background_colors = list(map(get_rgb, colors1))
@@ -92,12 +94,12 @@ class DoubleColoredMNIST(Dataset):
         obj_color += torch.normal(0, 0.01, (3, 1, 1))
 
         # get digit
-        im_digit = (self.ims_digit[idx]/255.).to(torch.float32)
-        im_digit = F.interpolate(im_digit[None,:], (self.mnist_sz, self.mnist_sz)).squeeze()
+        im_digit = (self.ims_digit[idx] / 255.).to(torch.float32)
+        im_digit = F.interpolate(im_digit[None, :], (self.mnist_sz, self.mnist_sz)).squeeze()
         im_digit = (im_digit > 0.1).to(int)  # binarize
 
         # plot digit onto the texture
-        ims = im_digit*(obj_color) + (1 - im_digit)*back_color
+        ims = im_digit * (obj_color) + (1 - im_digit) * back_color
 
         ret = {
             'ims': self.T(ims),
@@ -107,6 +109,7 @@ class DoubleColoredMNIST(Dataset):
 
     def __len__(self):
         return self.labels.shape[0]
+
 
 class WildlifeMNIST(Dataset):
     def __init__(self, train=True):
@@ -125,9 +128,9 @@ class WildlifeMNIST(Dataset):
         self.labels = labels
 
         # texture paths
-        background_dir = Path('.') / 'mnists' / 'data' / 'textures' / 'background'
+        background_dir = Path('') / 'mnists' / 'data' / 'textures' / 'background'
         self.background_textures = sorted([im for im in background_dir.glob('*.jpg')])
-        object_dir = Path('.') / 'mnists' / 'data' / 'textures' / 'object'
+        object_dir = Path('') / 'mnists' / 'data' / 'textures' / 'object'
         self.object_textures = sorted([im for im in object_dir.glob('*.jpg')])
 
         self.T_texture = transforms.Compose([
@@ -148,12 +151,12 @@ class WildlifeMNIST(Dataset):
         obj_text = self.T_texture(obj_text)
 
         # get digit
-        im_digit = (self.ims_digit[idx]/255.).to(torch.float32)
+        im_digit = (self.ims_digit[idx] / 255.).to(torch.float32)
         im_digit = F.interpolate(im_digit[None, :], (self.mnist_sz, self.mnist_sz)).squeeze()
         im_digit = (im_digit > 0.1).to(int)  # binarize
 
         # plot digit onto the texture
-        ims = im_digit*(obj_text) + (1 - im_digit)*back_text
+        ims = im_digit * (obj_text) + (1 - im_digit) * back_text
 
         ret = {
             'ims': ims,
@@ -163,6 +166,7 @@ class WildlifeMNIST(Dataset):
 
     def __len__(self):
         return self.labels.shape[0]
+
 
 def get_dataloaders(dataset, batch_size, workers):
     if dataset == 'colored_MNIST':
@@ -179,29 +183,43 @@ def get_dataloaders(dataset, batch_size, workers):
 
     dl_train = DataLoader(ds_train, batch_size=batch_size,
                           shuffle=True, num_workers=workers)
-    dl_test = DataLoader(ds_test, batch_size=batch_size*2,
+    dl_test = DataLoader(ds_test, batch_size=batch_size * 2,
                          shuffle=False, num_workers=workers)
 
     return dl_train, dl_test
+
 
 TENSOR_DATASETS = ['colored_MNIST', 'colored_MNIST_counterfactual',
                    'double_colored_MNIST', 'double_colored_MNIST_counterfactual',
                    'wildlife_MNIST', 'wildlife_MNIST_counterfactual']
 
-def get_tensor_dataloaders(dataset, batch_size=64):
-    assert dataset in TENSOR_DATASETS, f"Unknown datasets {dataset}"
 
+def get_tensor_dataloaders(dataset, batch_size=64, ablation=False, cf=None):
+    # assert dataset in TENSOR_DATASETS, f"Unknown datasets {dataset}"
+    ds_train = []
     if 'counterfactual' in dataset:
         tensor = torch.load(f'mnists/data/{dataset}.pth')
-        ds_train = TensorDataset(*tensor[:2])
-        dataset = dataset.replace('_counterfactual', '')
+        dataset = dataset.replace('_counterfactual' + (f'_{cf}' if cf is not None else ''), '')
+        real_tensor = torch.load(f'mnists/data/{dataset}_train.pth')
+        ds_r = TensorDataset(*real_tensor[:2])
+        ds_r = Subset(ds_r, np.arange(50000))
+        for i in [1e4, 1e5, 1e6] if ablation else [len(tensor[0])]:
+            ds = TensorDataset(*tensor[:2])
+            # ds = Subset(ds, np.arange(int(1e5)))
+            if ablation:
+                ds = Subset(ds, np.arange(int(i)))
+                # ds = torch.utils.data.ConcatDataset([ds_r, ds])
+            ds_train.append(ds)
     else:
-        ds_train = TensorDataset(*torch.load(f'mnists/data/{dataset}_train.pth'))
+        ds_train.append(TensorDataset(*torch.load(f'mnists/data/{dataset}_train.pth')))
     ds_test = TensorDataset(*torch.load(f'mnists/data/{dataset}_test.pth'))
 
-    dl_train = DataLoader(ds_train, batch_size=batch_size, num_workers=4,
-                          shuffle=True, pin_memory=True)
-    dl_test = DataLoader(ds_test, batch_size=batch_size*10, num_workers=4,
+    dl_train = []
+    for i in range(3 if ablation else 1):
+        dl_train.append(DataLoader(ds_train[i], batch_size=batch_size, num_workers=4,
+                                   shuffle=True, pin_memory=True))
+
+    dl_test = DataLoader(ds_test, batch_size=batch_size * 10, num_workers=4,
                          shuffle=False, pin_memory=True)
 
     return dl_train, dl_test

@@ -1,6 +1,5 @@
 import torch
 
-from utils.eval_shape_bias.human_categories import HumanCategories, get_human_object_recognition_categories
 from utils.eval_shape_bias.probabilities_to_decision import ImageNetProbabilitiesTo16ClassesMapping
 
 def get_pred_labels(model, feats):

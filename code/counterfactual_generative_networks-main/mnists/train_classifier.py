@@ -1,15 +1,16 @@
 import argparse
 import repackage
+
 repackage.up()
 
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 
 from mnists.models.classifier import CNN
 from mnists.dataloader import get_tensor_dataloaders, TENSOR_DATASETS
+
 
 def train(args, model, device, train_loader, optimizer, epoch):
     model.train()
@@ -26,14 +27,15 @@ def train(args, model, device, train_loader, optimizer, epoch):
         pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
         correct += pred.eq(target.view_as(pred)).sum().item()
 
-        if batch_idx % args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.item()))
+        # if batch_idx % args.log_interval == 0:
+        #     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+        #         epoch, batch_idx * len(data), len(train_loader.dataset),
+        #                100. * batch_idx / len(train_loader), loss.item()))
 
-    print('\nTrain set: Average loss: {:.4f}, Accuracy: {}/{} ({:.1f}%)\n'.format(
+    print('Train set: Average loss: {:.4f}, Accuracy: {}/{} ({:.1f}%)'.format(
         loss, correct, len(train_loader.dataset),
         100. * correct / len(train_loader.dataset)))
+
 
 def test(model, device, test_loader):
     model.eval()
@@ -49,27 +51,34 @@ def test(model, device, test_loader):
 
     test_loss /= len(test_loader.dataset)
 
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.3f}%)\n'.format(
+    print('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.3f}%)\n'.format(
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
+
 def main(args):
     # model and dataloader
-    model = CNN()
-    dl_train, dl_test = get_tensor_dataloaders(args.dataset, args.batch_size)
 
-    # Optimizer
-    optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
-    scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
+    for i in range(3 if args.ablation else 1):
+        print(f'X NUMBER {i}')
+        arr = [1, 5, 10] if args.dataset == 'colored_MNIST_counterfactual' else [1, 5, 10, 20]
+        for n in arr if args.ablation else [10]:
+            print(f'CF RATIO: {n}')
+            dataset = args.dataset + f'_{n}'
+            dl_train, dl_test = get_tensor_dataloaders(dataset, args.batch_size, ablation=args.ablation, cf=n)
+            model = CNN()
+            # Optimizer
+            optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
+            scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
 
-    # push to device and train
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
+            # push to device and train
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            model = model.to(device)
+            for epoch in range(1, args.epochs + 1):
+                train(args, model, device, dl_train[i], optimizer, epoch)
+                test(model, device, dl_test)
+                scheduler.step()
 
-    for epoch in range(1, args.epochs + 1):
-        train(args, model, device, dl_train, optimizer, epoch)
-        test(model, device, dl_test)
-        scheduler.step()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -83,8 +92,10 @@ if __name__ == '__main__':
                         help='learning rate (default: 1.0)')
     parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
                         help='Learning rate step gamma (default: 0.7)')
-    parser.add_argument('--log-interval', type=int, default=100, metavar='N',
+    parser.add_argument('--log-interval', type=int, default=1e30, metavar='N',
                         help='how many batches to wait before logging training status')
+    parser.add_argument('--ablation', type=bool, default=False, metavar='A',
+                        help="Whether to ablate how many cf images used")
     args = parser.parse_args()
 
     print(args)

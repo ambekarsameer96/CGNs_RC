@@ -1,20 +1,20 @@
-mnists/data/*
-!mnists/data/textures/
-imagenet/data/*
+code/counterfactual_generative_networks-main/mnists/data/*
+!code/counterfactual_generative_networks-main/mnists/data/textures/
+code/counterfactual_generative_networks-main/imagenet/data/*
 
-imagenet/experiments/*
-!imagenet/experiments/.placeholder
-mnists/experiments/*
-!mnists/experiments/.placeholder
-!mnists/experiments/cgn_colored_MNIST
-!mnists/experiments/cgn_double_colored_MNIST
-!mnists/experiments/cgn_wildlife_MNIST
+code/counterfactual_generative_networks-main/imagenet/experiments/*
+!code/counterfactual_generative_networks-main/imagenet/experiments/.placeholder
+code/counterfactual_generative_networks-main/mnists/experiments/*
+!code/counterfactual_generative_networks-main/mnists/experiments/.placeholder
+!code/counterfactual_generative_networks-main/mnists/experiments/cgn_colored_MNIST
+!code/counterfactual_generative_networks-main/mnists/experiments/cgn_double_colored_MNIST
+!code/counterfactual_generative_networks-main/mnists/experiments/cgn_wildlife_MNIST
 
-imagenet/runs/*
-!imagenet/runs/.placeholder
+code/counterfactual_generative_networks-main/imagenet/runs/*
+!code/counterfactual_generative_networks-main/imagenet/runs/.placeholder
 
-imagenet/weights/*
-!imagenet/weights/.placeholder
+code/counterfactual_generative_networks-main/imagenet/weights/*
+!code/counterfactual_generative_networks-main/imagenet/weights/.placeholder
 
 tags
 **/__pycache__
@@ -23,7 +23,7 @@ tags
 *.npz
 *.mp4
 *.pth
-!mnists/experiments/cgn_colored_MNIST/weights/ckp.pth
-!mnists/experiments/cgn_double_colored_MNIST/weights/ckp.pth
-!mnists/experiments/cgn_wildlife_MNIST/weights/ckp.pth
-!imagenet/data/u_fixed.pth
+!code/counterfactual_generative_networks-main/mnists/experiments/cgn_colored_MNIST/weights/ckp.pth
+!code/counterfactual_generative_networks-main/mnists/experiments/cgn_double_colored_MNIST/weights/ckp.pth
+!code/counterfactual_generative_networks-main/mnists/experiments/cgn_wildlife_MNIST/weights/ckp.pth
+!code/counterfactual_generative_networks-main/imagenet/data/u_fixed.pth

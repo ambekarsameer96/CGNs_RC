@@ -1,13 +1,13 @@
 import argparse
-import warnings
 from tqdm import trange
 import torch
 import repackage
+
 repackage.up()
 
 from mnists.train_cgn import CGN
 from mnists.dataloader import get_dataloaders
-from utils import load_cfg
+
 
 def generate_cf_dataset(cgn, path, dataset_size, no_cfs, device):
     x, y = [], []
@@ -33,6 +33,7 @@ def generate_cf_dataset(cgn, path, dataset_size, no_cfs, device):
     print(f"x shape {dataset[0].shape}, y shape {dataset[1].shape}")
     torch.save(dataset, 'mnists/data/' + path)
 
+
 def generate_dataset(dl, path):
     x, y = [], []
     for data in dl:
@@ -44,6 +45,7 @@ def generate_dataset(dl, path):
     print(f"Saving to {path}")
     print(f"x shape: {dataset[0].shape}, y shape: {dataset[1].shape}")
     torch.save(dataset, 'mnists/data/' + path)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -74,13 +76,14 @@ if __name__ == "__main__":
     # Generate counterfactual dataset
     else:
         # load model
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        cgn = CGN()
-        cgn.load_state_dict(torch.load(args.weight_path, 'cpu'))
-        cgn.to(device).eval()
+        for i in [1, 5, 10] if args.dataset == 'colored_MNIST' else [1, 5, 10, 20]:
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            cgn = CGN()
+            cgn.load_state_dict(torch.load(args.weight_path, 'cpu'))
+            cgn.to(device).eval()
 
-        # generate
-        print(f"Generating the counterfactual {args.dataset} of size {args.dataset_size}")
-        generate_cf_dataset(cgn=cgn, path=args.dataset + '_counterfactual.pth',
-                            dataset_size=args.dataset_size, no_cfs=args.no_cfs,
-                            device=device)
+            # generate
+            print(f"Generating the counterfactual {args.dataset} of size {args.dataset_size}")
+            generate_cf_dataset(cgn=cgn, path=args.dataset + f'_counterfactual_{i}.pth',
+                                dataset_size=args.dataset_size, no_cfs=i,
+                                device=device)

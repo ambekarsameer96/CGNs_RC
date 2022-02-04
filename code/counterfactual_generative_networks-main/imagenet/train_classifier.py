@@ -18,13 +18,9 @@ import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
-from torch.autograd import Variable
 import torch.multiprocessing as mp
 import torch.distributed as dist
 import torchvision.models as models
-from torchvision.datasets import ImageFolder
-from torchvision import transforms
-from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 
 from imagenet.dataloader import (get_imagenet_dls, get_cf_imagenet_dls,
@@ -37,7 +33,6 @@ model_names = sorted(name for name in models.__dict__
     and callable(models.__dict__[name]))
 
 best_acc1_overall = 0
-
 
 def main(args):
 
@@ -98,7 +93,7 @@ def main_worker(gpu, ngpus_per_node, args):
     # save path
     if not args.resume:
         time_str = datetime.now().strftime("%Y_%m_%d_%H_%M")
-        model_path = join('.', 'imagenet', 'experiments',
+        model_path = join('', 'imagenet', 'experiments',
                             f'classifier_{time_str}_{args.name}')
         pathlib.Path(model_path).mkdir(parents=True, exist_ok=True)
         # dump current args in this folder
